@@ -16,39 +16,46 @@ Code compatible:
 
 from __future__ import division
 import random
-import numpy
+import numpy as np
 import math
 from solution import solution
 import time
-import ClearDups
+from ClearDups import ClearDups
 
 
         
 def BBO(objf,lb,ub,dim,PopSize,iters):
     # Defining the solution variable for saving output variables
     s=solution()
-    
-    # Initializing the parameters with default values
-    fit = numpy.zeros(PopSize)
-    EliteSolution=numpy.zeros((Keep,dim))
-    EliteCost=numpy.zeros(Keep)
-    Island=numpy.zeros((PopSize,dim))
-    mu=numpy.zeros(PopSize)
-    lambda1=numpy.zeros(PopSize)
-    MinCost=numpy.zeros(iters)
-    Bestpos=numpy.zeros(dim)
-
-    # Initializing BBO parameters
-    pmutate = 0.01; # initial mutation probability
     Keep = 2; # elitism parameter: how many of the best habitats to keep from one generation to the next
 
+    # Initializing the parameters with default values
+    fit = np.zeros(PopSize)
+    EliteSolution=np.zeros((Keep,dim))
+    EliteCost=np.zeros(Keep)
+    Island=np.zeros((PopSize,dim))
+    mu=np.zeros(PopSize)
+    lambda1=np.zeros(PopSize)
+    MinCost=np.zeros(iters)
+    Bestpos=np.zeros(dim)
+    Bestpos=[]
+    # Initializing BBO parameters
+    pmutate = 0.01 
+    
     # Initializing Population
-    pos=numpy.random.uniform(0,1,(PopSize,dim)) *(ub-lb)+lb
 
+
+    #lb = np.array([-8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, -5, -5])
+    #ub = np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -2, -2])
+
+    #pos=np.random.uniform(0,1,(PopSize,dim)) *(ub-lb)+lb
+    pos=np.random.uniform(0,1,(PopSize,dim)) *(float(10)**ub-float(10)**lb)+float(10)**lb
+    
     #Calculate objective function for each particle
     for i in range(PopSize):
         # Performing the bound checking
-        pos[i,:]=numpy.clip(pos[i,:], lb, ub)
+        #pos[i,:]=np.clip(pos[i,:], lb, ub)
+        pos[i,:]=np.clip(pos[i,:], float(10)**lb, float(10)**ub)
         fitness=objf(pos[i,:])
         fit[i]=fitness
 
@@ -57,7 +64,7 @@ def BBO(objf,lb,ub,dim,PopSize,iters):
         mu[i] = (PopSize + 1 - (i)) / (PopSize + 1)
         lambda1[i] = 1 - mu[i]
 
-    print("BBO is optimizing  \""+objf.__name__+"\"")    
+    #print("BBO is optimizing  \""+objf.__name__+"\"")    
     
     timerStart=time.time() 
     s.startTime=time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -89,11 +96,13 @@ def BBO(objf,lb,ub,dim,PopSize,iters):
         for k in range(PopSize):
             for parnum in range(dim):
                 if pmutate > random.random():
-                    Island[k,parnum] = lb + (ub-lb) * random.random();
+                    Island[k,parnum] = float(10)**lb[parnum]+ (float(10)**ub[parnum]-float(10)**lb[parnum])* random.random();
+                   # Island[k,parnum] = lb + (ub-lb) * random.random();
 
         # Performing the bound checking
         for i in range(PopSize):
-            Island[i,:]=numpy.clip(Island[i,:], lb, ub)
+            #Island[i,:]=np.clip(Island[i,:], lb, ub)
+            Island[i,:]=np.clip(Island[i,:], float(10)**lb, float(10)**ub)
 
         # Replace the habitats with their new versions.
         for k in range(PopSize):
@@ -105,10 +114,10 @@ def BBO(objf,lb,ub,dim,PopSize,iters):
             fit[i]=fitness
 
         # Sort the fitness
-        fitness_sorted=numpy.sort(fit)
+        fitness_sorted=np.sort(fit)
 
         # Sort the population on fitness
-        I=numpy.argsort(fit)
+        I=np.argsort(fit)
         pos=pos[I,:]
 
         # Replacing the individual of population with EliteSolution
@@ -117,7 +126,7 @@ def BBO(objf,lb,ub,dim,PopSize,iters):
             fit[(PopSize-1)] = EliteCost[k];
         
         # Removing the duplicate individuals
-        pos=ClearDups.ClearDups(pos, PopSize, dim, ub, lb)
+        pos=ClearDups(pos, PopSize, dim, ub, lb)
 
         #Calculate objective function for each individual
         for i in range(PopSize):
@@ -125,27 +134,28 @@ def BBO(objf,lb,ub,dim,PopSize,iters):
             fit[i]=fitness
 
         # Sort the fitness
-        fitness_sorted=numpy.sort(fit)
+        fitness_sorted=np.sort(fit)
 
         # Sort the population on fitness
-        I=numpy.argsort(fit)  
+        I=np.argsort(fit)  
         pos=pos[I,:]
 
         # Saving the best individual
         MinCost[l] = fit[1]
-        Bestpos=pos[1,:]
+        Bestpos.append(str(pos[1,:]))
         gBestScore=fit[1]
-
+        bestindividual= pos[1,:]
         # Displaying the best fitness of each iteration
         if (l%1==0):
-               print(['At iteration '+ str(l+1)+ ' the best fitness is '+ str(gBestScore)]);
+               print(['At iteration '+ str(l+1)+ ' the best fitness is '+ str(gBestScore)], bestindividual); 
 
     timerEnd=time.time()  
     s.endTime=time.strftime("%Y-%m-%d-%H-%M-%S")
     s.executionTime=timerEnd-timerStart
     s.convergence=MinCost
     s.optimizer="BBO"
-    s.objfname=objf.__name__
+    s.objfname="F4"
+    s.bestIndividual = Bestpos
 
     return s
          
